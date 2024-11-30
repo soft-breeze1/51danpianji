@@ -1,0 +1,78 @@
+C51 COMPILER V9.54   TIMER0                                                                11/29/2024 19:05:56 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE TIMER0
+OBJECT MODULE PLACED IN .\Objects\Timer0.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE Timer0.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\Time
+                    -r0.lst) OBJECT(.\Objects\Timer0.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          
+   3          void Timer0Init(void)
+   4          {
+   5   1              TMOD &= 0xF0;           //设置定时器模式
+   6   1              TMOD |= 0x01;           //设置定时器模式
+   7   1              TL0 = 0;                //设置定时初值
+   8   1              TH0 = 0;                //设置定时初值
+   9   1              TF0 = 0;                //清除TF0标志
+  10   1              TR0 = 0;                //定时器0【不】开始计时
+  11   1      }
+  12          
+  13          /**
+  14            * @brief    设置开始计时的时间
+  15            * @param    Value：开始计时时间
+  16            * @retval   无
+  17            */
+  18          void Timer_SetCounter(unsigned int Value)
+  19          {
+  20   1              /*
+  21   1                      单片机的定时器模块中，采用的是 16 位的计数方式，
+  22   1                      也就是用两个 8 位的寄存器来共同表示一个 16 位的计数值。
+  23   1                      对于 51 单片机的定时器 0 来说，这两个寄存器就是 TH0（定时
+  24   1                      器 0 的高 8 位寄存器）和 TL0（定时器 0 的低 8 位寄存器）。
+  25   1              
+  26   1                      将一个完整的 16 位计数值【Value】正确地分配到了定时器 0 的
+  27   1                      高 8 位寄存器 TH0 和低 8 位寄存器 TL0 中，从而使得 定时器 能
+  28   1                      够按照设定的计数值进行准确的定时操作。
+  29   1              */
+  30   1              TH0 = Value/256;
+  31   1              TL0 = Value%256;      //将Value的16位数据
+  32   1      }
+  33          
+  34          /**
+  35            * @brief    获取定时器的当前计数值
+  36            * @param    无
+  37            * @retval   (TH0<<8)|TL0 ：获取到定时器的当前计数值
+  38            */
+  39          unsigned int Timer_GetCounter(void)
+  40          {
+  41   1              return (TH0<<8)|TL0;
+  42   1      }
+  43          
+  44          /**
+  45            * @brief    给1时开始计时，给0时不计时  
+  46            * @param    Flag：计时标志位
+  47            * @retval   无
+  48            */
+  49          void TIMER_Run(unsigned char Flag)
+  50          {
+  51   1              TR0 = Flag;
+  52   1      }
+
+
+C51 COMPILER V9.54   TIMER0                                                                11/29/2024 19:05:56 PAGE 2   
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     42    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
