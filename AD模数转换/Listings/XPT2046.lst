@@ -1,0 +1,89 @@
+C51 COMPILER V9.54   XPT2046                                                               11/30/2024 16:45:58 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE XPT2046
+OBJECT MODULE PLACED IN .\Objects\XPT2046.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE XPT2046.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\XPT
+                    -2046.lst) OBJECT(.\Objects\XPT2046.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          
+   3          sbit XPT2046_CS = P3^5;
+   4          sbit XPT2046_DCLK = P3^6;
+   5          sbit XPT2046_DIN = P3^4;
+   6          sbit XPT2046_DOUT = P3^7;
+   7          
+   8          /**
+   9            * @brief   通过 SPI 接口（模拟方式）从 XPT2046 芯片读取模拟数字
+  10                                   转换（ADC）的值。XPT2046 是一款常用的触摸屏控制器和 
+  11                                   ADC 芯片，这段函数实现了【向XPT2046 芯片】发送【读取
+  12                                   命令】并接收转换结果的操作。
+  13            * @param   Command : 向 XPT2046 芯片发送特定的命令 
+  14            * @retval  ADVAlue 被用于存储从 XPT2046 芯片读取到的模拟数字转换（ADC）
+  15                                   结果。具体来说，通过一系列的操作，包括向芯片发送读取命令以及
+  16                                   接收芯片返回的数据位，并将这些数据位组合成一个完整的 16 位
+  17                                   ADVAlue。
+  18            */
+  19          unsigned int XPT2046_ReadAD(unsigned char Command)  //转换哪个通道
+  20                  // 三个通道【电位器】【热敏电阻】【光敏电阻】
+  21          {
+  22   1              unsigned char i;
+  23   1              unsigned int ADVAlue = 0;       // 初始化要转换的AD值
+  24   1              XPT2046_DCLK = 0;                               // 初始化DCLK
+  25   1              XPT2046_CS = 0;                                 // 拉低【片选线】
+  26   1              
+  27   1              for(i=0;i<8;i++)                // 将 8位 命令 发给 【XPT2046芯片】 
+  28   1              {
+  29   2                      XPT2046_DIN = Command&(0x80>>i);    
+  30   2                      //将 【Command 的最高位】 放在 【XPT2046_DIN】 上
+  31   2                      XPT2046_DCLK = 1;           //将【最高位】 发出去，
+  32   2                      XPT2046_DCLK = 0;           //再将其拉低，为了下一次发送数据
+  33   2              }
+  34   1              
+  35   1              // 中间会有【BUSY】时间，根据实际测试，不需要加【延时时间】
+  36   1              
+  37   1              /*
+  38   1                      通过一个循环从 XPT2046 芯片的 DOUT 引脚读取 16 位数据到 ADVAlue
+  39   1                      变量中，然后根据 Command 与 0x04 的按位与结果，对读取到的数据进
+  40   1                      行移位处理并返回不同的值。
+  41   1              */
+  42   1              
+  43   1              for(i=0;i<16;i++)               // 连续读 16 位
+  44   1              {
+  45   2                      XPT2046_DCLK = 1;           //先给一个上升沿和一个下降沿，数据才会过来
+  46   2                      XPT2046_DCLK = 0;
+  47   2                      if(XPT2046_DOUT){ADVAlue|=(0x8000>>i);}
+  48   2                      // 当 【XPT2046_DOUT】 为【高电平】，就将右移后的 0x8000 与 
+  49   2                      // ADVAlue 进行【按位或】操作，从而将【对应位的数据 1】存入ADVAlue中
+  50   2              }
+  51   1              XPT2046_CS = 1;                 // 【CS拉高】
+  52   1              
+  53   1              if(Command&0x08)                // 取出【0x08】这一位，如果为1，则为8 位精度
+  54   1              {       
+C51 COMPILER V9.54   XPT2046                                                               11/30/2024 16:45:58 PAGE 2   
+
+  55   2                      return ADVAlue>>8;          // 因为选择的是8位的精度，所以读出的
+  56   2                                                                              // 数据中后8面【0填充】，右移8位读出
+  57   2                                                                              // 准确数据
+  58   2              }
+  59   1              else                            // 如果为0，则为 【12 位精度】            
+  60   1              {
+  61   2                      return ADVAlue>>4;          // 右移4位读出准确数据
+  62   2              }
+  63   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    110    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
