@@ -1,0 +1,5 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\LCD1602.obj" 
+TO ".\Objects\qifengle" 
+PRINT(".\Listings\qifengle.m51") RAMSIZE(256) 
