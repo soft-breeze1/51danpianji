@@ -1,0 +1,76 @@
+C51 COMPILER V9.54   MAIN                                                                  10/03/2024 20:45:17 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          
+   3          unsigned char NixieTable[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
+   4          
+   5          void Delay1ms(unsigned int xms)         //@12.000MHz
+   6          {
+   7   1              unsigned char i, j;
+   8   1      
+   9   1              while(xms--)
+  10   1              {
+  11   2                      i = 2;
+  12   2                      j = 239;
+  13   2                      do
+  14   2                      {
+  15   3                              while (--j);
+  16   3                      } while (--i);
+  17   2              }
+  18   1      }
+  19          
+  20          
+  21          void Nixie(unsigned char Location,Number)
+  22          {
+  23   1              switch(Location)
+  24   1              {
+  25   2                      case 1:P2_4 = 1;P2_3 = 1;P2_2 = 1;break;   //Y7
+  26   2                      case 2:P2_4 = 1;P2_3 = 1;P2_2 = 0;break;   //Y6
+  27   2                      case 3:P2_4 = 1;P2_3 = 0;P2_2 = 1;break;   //Y5
+  28   2                      case 4:P2_4 = 1;P2_3 = 0;P2_2 = 0;break;   //Y4
+  29   2                      case 5:P2_4 = 0;P2_3 = 1;P2_2 = 1;break;   //Y3
+  30   2                      case 6:P2_4 = 0;P2_3 = 1;P2_2 = 0;break;   //Y2
+  31   2                      case 7:P2_4 = 0;P2_3 = 0;P2_2 = 1;break;   //Y1
+  32   2                      case 8:P2_4 = 0;P2_3 = 0;P2_2 = 0;break;   //Y0
+  33   2              }
+  34   1              P0 = NixieTable[Number];
+  35   1              Delay1ms(1);
+  36   1              P0 = 0x00;   //«Â¡„
+  37   1      }
+  38          
+  39          void main()
+  40          {
+  41   1              while(1)
+  42   1              {
+  43   2                      Nixie(1,1);
+  44   2      //              Delay1ms(200);
+  45   2                      Nixie(2,2);
+  46   2      //              Delay1ms(200);
+  47   2                      Nixie(3,3);
+  48   2      //              Delay1ms(200);
+  49   2              }
+  50   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    159    ----
+C51 COMPILER V9.54   MAIN                                                                  10/03/2024 20:45:17 PAGE 2   
+
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     10    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
