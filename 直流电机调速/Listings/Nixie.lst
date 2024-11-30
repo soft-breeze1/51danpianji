@@ -1,0 +1,59 @@
+C51 COMPILER V9.54   NIXIE                                                                 11/20/2024 17:21:29 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE NIXIE
+OBJECT MODULE PLACED IN .\Objects\Nixie.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE Nixie.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\Nixie
+                    -.lst) OBJECT(.\Objects\Nixie.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          #include "Delay.h"
+   3          
+   4          /*
+   5                      这是一个数组，通常被称为数码管段码表。其中每个元素对应 0-9 十个数字的
+             -段码值，
+   6                  用于控制数码管显示不同的数字。例如，0x3F 通常对应数字 0 的段码。
+   7          */
+   8          unsigned char NixieTable[] = {0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
+   9          
+  10          /**
+  11            * @brief    实现了一个数码管（共阴极数码管）的驱动函数。
+  12            * @brief        它可以根据传入的参数在【特定的数码管位置】显示【相应的数字】。
+  13            * @param    Location：【传入要显示数字的数码管位置】。Number：【传入要显示的数
+             -字】
+  14            * @retval   无
+  15            */
+  16          void Nixie(unsigned char Location,Number)
+  17          {
+  18   1              switch(Location)
+  19   1              {
+  20   2                      case 1:P2_4 = 1;P2_3 = 1;P2_2 = 1;break;   //Y7  第一个位置
+  21   2                      case 2:P2_4 = 1;P2_3 = 1;P2_2 = 0;break;   //Y6  第二个位置 
+  22   2                      case 3:P2_4 = 1;P2_3 = 0;P2_2 = 1;break;   //Y5  第三个位置
+  23   2                      case 4:P2_4 = 1;P2_3 = 0;P2_2 = 0;break;   //Y4  第四个位置
+  24   2                      case 5:P2_4 = 0;P2_3 = 1;P2_2 = 1;break;   //Y3  第五个位置
+  25   2                      case 6:P2_4 = 0;P2_3 = 1;P2_2 = 0;break;   //Y2  第六个位置
+  26   2                      case 7:P2_4 = 0;P2_3 = 0;P2_2 = 1;break;   //Y1  第七个位置
+  27   2                      case 8:P2_4 = 0;P2_3 = 0;P2_2 = 0;break;   //Y0  第八个位置
+  28   2              }
+  29   1              P0 = NixieTable[Number];//将对应数字的段码输出到 P0 端口，以控制数码管显示特定的
+             -数字
+  30   1              Delay(1);
+  31   1              P0 = 0x00; //在显示完数字后，将 P0 端口清零，以避免对其他数码管产生影响
+  32   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    109    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     10    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
