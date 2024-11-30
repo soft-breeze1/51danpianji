@@ -1,0 +1,137 @@
+C51 COMPILER V9.54   ONEWIRE                                                               11/16/2024 16:29:23 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE ONEWIRE
+OBJECT MODULE PLACED IN .\Objects\OneWire.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE OneWire.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\One
+                    -Wire.lst) OBJECT(.\Objects\OneWire.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          
+   3          // 在【@11.0592MHz】中的延时函数中【函数跳转】需要【5us】
+   4          
+   5          sbit OneWire_DQ = P3^7;
+   6          
+   7          /**
+   8            * @brief    初始化：主机将总线拉低至少480us，然后释放总线，等待15~60us后，
+   9            * @brief        【存在的从机】会拉低总线60~240us以响应主机，之后从机将释放总线。
+  10            * @param    无
+  11            * @retval   返回应答位
+  12            */
+  13          unsigned char OneWire_Init(void)
+  14          {
+  15   1              unsigned char i;
+  16   1              unsigned char AckBit;
+  17   1              
+  18   1              EA = 0;     // 不允许全局中断 ， 
+  19   1                                      // 因为进入中断时间比较长,而下面这些操作都是 us 
+  20   1                                      // 【要防止下面的代码运行时进入中断】
+  21   1      
+  22   1              OneWire_DQ = 1;
+  23   1              OneWire_DQ = 0;
+  24   1              i = 227;while (--i);       //Delay 500 us
+  25   1              OneWire_DQ = 1;            //释放总线
+  26   1              i = 29;while (--i);        //Delay 70 us
+  27   1              AckBit = OneWire_DQ;       //应答位
+  28   1              i = 227;while (--i);       //把时序走完，480-70=410，直接Delay 500 us
+  29   1              
+  30   1              EA = 1;     //【打开全局中断】
+  31   1              
+  32   1              return AckBit;
+  33   1      }
+  34          
+  35          /**
+  36            * @brief   【发送一位】：主机将总线拉低60~120us，然后释放总线，表示发送0;
+  37                                   主机将总线拉低1~15us，然后释放总线，表示发送1。从机将在总线
+  38                                   拉低30us后（典型值）读取电平，整个时间片应大于60us  
+  39            * @param   Bit:主机发送给从机的一位数据
+  40            * @retval  无
+  41            */
+  42          void OneWire_SendBit(unsigned char Bit)
+  43          {
+  44   1              unsigned char i;
+  45   1              EA = 0;
+  46   1              OneWire_DQ = 0;   //从机拉低总线后会自动释放总线，所以初始化完总线是1
+  47   1              i = 4;while (--i);         // Delay 10us
+  48   1              OneWire_DQ = Bit;     //【如果是高电平就是1，低电平为0】
+  49   1              i = 22;while (--i);   //Delay 50us   结束       【10+50=61】
+  50   1              OneWire_DQ = 1;
+  51   1              EA = 1;
+  52   1      }
+  53          
+  54          /**
+C51 COMPILER V9.54   ONEWIRE                                                               11/16/2024 16:29:23 PAGE 2   
+
+  55            * @brief   【接收一位】：主机将总线拉低1~15us，然后释放总线，并在拉低后
+  56                                   15us内读取总线电平（尽量贴近15us的末尾），读取为低电平则
+  57                                   为接收0，读取为高电平则为接收1，整个时间片应大于60us。
+  58            * @param   无
+  59            * @retval  主机读取从机一位数据
+  60            */
+  61          unsigned char OneWire_ReceiveBit(void)
+  62          {
+  63   1              unsigned char i;
+  64   1              unsigned char Bit;
+  65   1              EA = 0;
+  66   1              OneWire_DQ = 0;        //拉低总线，以防上次总线电平还没恢复为【低电平】
+  67   1              i = 2;while (--i);     //Delay 5us
+  68   1              
+  69   1              OneWire_DQ = 1;
+  70   1              i = 2;while (--i);     //Delay 5us
+  71   1              
+  72   1              Bit = OneWire_DQ;      //主机接收从机的一位数据
+  73   1              i = 22;while (--i);    //Delay 50us
+  74   1              EA = 1;
+  75   1              return Bit;
+  76   1      }
+  77          
+  78          /**
+  79            * @brief    主机发送给从机的一个字节
+  80            * @param    Byte：要发送的字节
+  81            * @retval   无
+  82            */
+  83          void OneWire_SendByte(unsigned char Byte)
+  84          {
+  85   1              unsigned char i;
+  86   1              for(i=0;i<8;i++)        //主机发送给从机的一个字节
+  87   1              {
+  88   2                      OneWire_SendBit(Byte&(0x01<<i));
+  89   2              }
+  90   1      }
+  91          
+  92          /**
+  93            * @brief    主机接收从机的一个字节
+  94            * @param    无
+  95            * @retval   Byte：要接受的字节
+  96            */
+  97          unsigned char OneWire_ReceiveByte(void)
+  98          {
+  99   1              unsigned char i;
+ 100   1              unsigned char Byte = 0x00;
+ 101   1              for(i=0;i<8;i++)        //主机接收从机的一个字节
+ 102   1              {
+ 103   2                      if(OneWire_ReceiveBit()){Byte|=(0x01<<i);}
+ 104   2                      //判断一下，如果有字节需要接收，就可以依次取出每位的数据
+ 105   2                      //OneWire_ReceiveBit()为1，【有数据】，Byte【|】一个【1】
+ 106   2                      //OneWire_ReceiveBit()为0，【没有数据】，Byte【|】一个【0】
+ 107   2              }
+ 108   1              return Byte;
+ 109   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    134    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+C51 COMPILER V9.54   ONEWIRE                                                               11/16/2024 16:29:23 PAGE 3   
+
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

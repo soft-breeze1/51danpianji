@@ -1,0 +1,158 @@
+C51 COMPILER V9.54   I2C                                                                   11/16/2024 15:37:44 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE I2C
+OBJECT MODULE PLACED IN .\Objects\I2C.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE I2C.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\I2C.lst
+                    -) OBJECT(.\Objects\I2C.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          
+   3          sbit I2C_SCL = P2^1;  //时钟线
+   4          sbit I2C_SDA = P2^0;  //数据线
+   5          
+   6          /**
+   7            * @brief    I2C开始
+   8            * @param    无
+   9            * @retval   无
+  10            */
+  11          void I2C_Start(void)
+  12          {
+  13   1              //I2C时序结构：
+  14   1              // 【【起止条件：SCL高电平期间，SDA从高电平(1)切换到低电平(0)】】
+  15   1              I2C_SDA = 1;
+  16   1              I2C_SCL = 1;
+  17   1              I2C_SDA = 0;
+  18   1              I2C_SCL = 0;
+  19   1              /*
+  20   1                      起始信号的产生过程是在 SCL 为高电平时，将 SDA 从高电平拉低。
+  21   1                      在开始产生起始信号之前，确保 SDA 和 SCL 处于一个已知的、稳定的初始
+  22   1              状态。将 I2C_SDA 置为 1 是为了明确起始操作是从高电平向低电平的转换，这
+  23   1              样可以使整个起始信号的产生过程更加清晰和可预测。
+  24   1              */
+  25   1      }
+  26          
+  27          /**
+  28            * @brief   I2C停止 
+  29            * @param   无
+  30            * @retval  无
+  31            */
+  32          void I2C_Stop(void)
+  33          {
+  34   1              // 【【终止条件：SCL高电平期间，SDA从低电平(0)切换到高电平(1)】】
+  35   1              I2C_SDA = 0;    //SDA从低电平(0)
+  36   1              I2C_SCL = 1;    //SCL高电平
+  37   1              I2C_SDA = 1;    //SDA切换到高电平(1)
+  38   1      }
+  39          
+  40          /*
+  41              发送一个字节：SCL低电平(0)期间，主机(单片机)将数据位依次放到SDA线上
+  42          （高位在前）,然后拉高SCL(1)，从机(AT24C02)将在SCL高电平期间读取数据位,所
+  43          以SCL高电平(1)期间 SDA不允许有数据变化，依次循环上述过程8次，即可发送一个
+  44          字节。
+  45          */
+  46          /**
+  47            * @brief   I2C发送一个字节 
+  48            * @param   Byte：要发送的字节
+  49            * @retval  无
+  50            */
+  51          void I2C_SendByte(unsigned char Byte)
+  52          {
+  53   1              unsigned char i;
+  54   1              for(i=0;i<8;i++)
+C51 COMPILER V9.54   I2C                                                                   11/16/2024 15:37:44 PAGE 2   
+
+  55   1              {
+  56   2                      I2C_SDA = Byte&(0x80>>i);   //将Byte的最高位赋给I2C_SDA
+  57   2                      I2C_SCL = 1;
+  58   2                      I2C_SCL = 0;
+  59   2              }
+  60   1      }
+  61          
+  62          /*
+  63              接收一个字节：SCL低电平期间，从机将数据位依次放到SDA线上（高位在前），
+  64          然后拉高SCL，主机将在SCL高电平期间读取数据位,所以SCL高电平期间SDA不允许有
+  65          数据变化，依次循环上述过程8次，即可接收一个字节（主机在接收之前，需要释
+             -放
+  66          SDA)
+  67          */
+  68          /**
+  69            * @brief   I2C接收一个字节 
+  70            * @param   无
+  71            * @retval  接收到的一个字节数据
+  72            */
+  73          unsigned char I2C_ReceiveByte(void)
+  74          {
+  75   1              unsigned char i,Byte = 0x00;
+  76   1              
+  77   1              I2C_SDA = 1;   //最好是高电平读取（符合协议）
+  78   1              
+  79   1              for(i=0;i<8;i++)
+  80   1              {
+  81   2                      I2C_SCL = 1;    //每次将 I2C_SCL 置为高电平，此时从设备会在 SDA 线上放置一位数据
+  82   2                      if(I2C_SDA == 1){Byte|=(0x80>>i);}//将Byte的从高到低（第i位）置一}
+  83   2                      //【说明此时读取到的是【1】】【若没有数据则不读取】
+  84   2                      //if(I2C_SDA = 0){什么也不做;}
+  85   2                      I2C_SCL = 0;    //接着将 I2C_SCL 置为低电平，为下一次接收数据位做准备。
+  86   2              }
+  87   1              return Byte;
+  88   1      }
+  89          
+  90          /*
+  91                  发送应答：在接收完一个字节之后，主机在下一个时钟发送一位数据，
+  92          数据0表示应答，数据1表示非应答
+  93          */
+  94          /**
+  95            * @brief   I2C发送应答  
+  96            * @param   AckBit：应答位，【0为应答】【1为非应答】
+  97            * @retval  无 
+  98            */
+  99          void I2C_SendAck(unsigned char AckBit)
+ 100          {
+ 101   1              I2C_SDA = AckBit;
+ 102   1              I2C_SCL = 1;
+ 103   1              I2C_SCL = 0;
+ 104   1      }
+ 105          
+ 106          /*
+ 107                  接收应答：在发送完一个字节之后，主机在下一个时钟接收一位数据，
+ 108          判断从机是否应答，【数据0表示应答】，【数据1表示非应答】（主机在接收之�
+             -�，
+ 109          需要释放SDA)
+ 110          */
+ 111          /**
+ 112            * @brief   I2C接收应答位 
+ 113            * @param   无
+ 114            * @retval  接收到的应答位，【0为应答】【1为非应答】
+C51 COMPILER V9.54   I2C                                                                   11/16/2024 15:37:44 PAGE 3   
+
+ 115            */
+ 116          unsigned char I2C_ReceiveAck(void)
+ 117          {
+ 118   1              unsigned char AckBit;
+ 119   1              I2C_SDA = 1;  //释放总线，准备接收应答信号。这一步是因为主设备在接收数据
+ 120   1                                        //后，应该释放 SDA 线，让从设备可以控制 SDA 线来发送应答信号。
+ 121   1              I2C_SCL = 1;    //拉高时钟线 SCL。在 I²C 通信中，当 SCL 为高电平时，
+ 122   1                                              //数据在 SDA 线上是稳定的
+ 123   1              AckBit = I2C_SDA;  //读取 SDA 线上的电平状态并保存到 AckBit 变量中
+ 124   1      //【如果从设备正确地接收到数据并发送了应答信号，那么在这个时候 SDA 线应该
+             -为低电平】
+ 125   1              I2C_SCL = 0;   //拉低时钟线，为下一次通信操作做准备
+ 126   1              return AckBit;  //接收到的应答信号的电平状态
+ 127   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    109    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
