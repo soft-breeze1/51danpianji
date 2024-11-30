@@ -1,0 +1,95 @@
+C51 COMPILER V9.54   MAIN                                                                  11/08/2024 20:23:28 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          #include "Delay.h"
+   3          #include "LCD1602.h"
+   4          #include "Key.h"
+   5          #include "AT24C02.h"
+   6          
+   7          /*
+   8          ST89C52单片机与 AT24C02(常见的 EEPROM（电可擦除可编程只读存储器）芯片)
+   9          通常通过 I²C 总线连接。连接方式如下：
+  10          将 ST89C52单片机的两个I/O引脚分别连接到AT24C02的SCL（时钟线和SDA（数据线）引脚�
+             -��
+  11          通常需要在SCL 和 SDA 线上连接上拉电阻（一般为 4.7kΩ 左右）到电源 VCC。
+  12          
+  13          AT24C02 是一个 2K 位（256 字节）的串行电可擦除可编程只读存储器（EEPROM）。
+  14          所以从机 AT24C02 可以存储 256 个字节的数据
+  15          */
+  16          
+  17          unsigned char KeyNum;
+  18          unsigned int Num;   //Num占两个字节
+  19          
+  20          void main()
+  21          {
+  22   1              LCD_Init();
+  23   1              LCD_ShowNum(1,1,Num,5);
+  24   1      //      AT24C02_WriteByte(0,147);
+  25   1      //      Delay(5);
+  26   1      //      AT24C02_WriteByte(1,17);
+  27   1      //      Delay(5);
+  28   1      //      AT24C02_WriteByte(2,14);
+  29   1      //      Delay(5);     //在对 AT24C02 进行写操作后，需要等待5ms的写周期才能读出来
+  30   1      //      Data = AT24C02_ReadByte(1);
+  31   1      //      LCD_ShowNum(2,1,Data,3);
+  32   1          while(1)
+  33   1          {
+  34   2              KeyNum = Key();
+  35   2                      if(KeyNum == 1)
+  36   2                      {
+  37   3                              Num++;
+  38   3                              LCD_ShowNum(1,1,Num,5);
+  39   3                      }
+  40   2                      if(KeyNum == 2)
+  41   2                      {
+  42   3                              Num--;
+  43   3                              LCD_ShowNum(1,1,Num,5);
+  44   3                      }
+  45   2                      if(KeyNum == 3)
+  46   2                      {
+  47   3                              AT24C02_WriteByte(0,Num%256);//Num的低8位存放在AT24C02第零个字节
+  48   3                              Delay(5);
+  49   3                              AT24C02_WriteByte(1,Num/256);//Num的高8位存放在AT24C02第一个字节
+  50   3                              Delay(5);
+  51   3                              LCD_ShowString(2,1,"Write OK");
+  52   3                              Delay(1000);
+  53   3                              LCD_ShowString(2,1,"        ");
+C51 COMPILER V9.54   MAIN                                                                  11/08/2024 20:23:28 PAGE 2   
+
+  54   3                      }
+  55   2                      if(KeyNum == 4)
+  56   2                      {
+  57   3                              Num = AT24C02_ReadByte(0); //Num的低8位数据，此时Num的高八位全为0
+  58   3                              Num |= AT24C02_ReadByte(1)<<8;
+  59   3                              // AT24C02第一个字节左移8位后为16位数据，可以让原本的数据(相或)赋给Num
+  60   3                              // Num的高8位(全为0)与AT24C02第一个字节左移8位相或(16位)，
+  61   3                              // 即【将Num的高8位写入到Num中】
+  62   3                              LCD_ShowNum(1,1,Num,5);
+  63   3                              LCD_ShowString(2,1,"Read OK");
+  64   3                              Delay(1000);
+  65   3                              LCD_ShowString(2,1,"        ");
+  66   3                      }
+  67   2          }
+  68   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    223    ----
+   CONSTANT SIZE    =     26    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
