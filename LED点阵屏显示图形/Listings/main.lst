@@ -1,0 +1,143 @@
+C51 COMPILER V9.54   MAIN                                                                  11/02/2024 16:46:07 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*
+   2          sfr (special function register)：特殊功能寄存器声明
+   3                  例：sfr PO= 0x80;
+   4                  声明PO口寄存器，物理地址为0x80
+   5          sbit (special bit)：特殊位声明
+   6                  例：sbit PO_1= 0x81； 或 sbit p0_1=PO^1;
+   7                  声明PO寄存器的第1位
+   8          可位寻址/不可位寻址：在单片机系统中，操作任意寄存器或者某一位的数据时，
+   9          必须给出其物理地址，又因为一个寄存器里有8位,所以位的数量是寄存器数量的8�
+             -��，
+  10          单片机无法对所有位进行编码，故每8个寄存器中，只有一个是可以位寻址的。
+  11          对不可位寻址的寄存器，若要只操作其中一位而不影响其它位时，可用“&=”、�
+             -�|=”、
+  12          “八=”的方法进行位操作
+  13          */
+  14          
+  15          
+  16          #include <REGX52.H>
+  17          #include "Delay.h"
+  18          
+  19          sbit RCK = P3^5;     //SRCK    位声明   sbit P3_5 = 0xB5;  
+  20          sbit SCK = P3^6;     //SRCLK   上升沿 
+  21          sbit SER = P3^4;     //SER
+  22          
+  23          //设置一个宏，将控制LED灯 列 亮的P0口定义为 【Matrix_LED_PORT】
+  24          #define Matrix_LED_PORT    P0   
+  25          
+  26          /**
+  27            * @brief    74HC595写入一个字节
+  28            * @param    要写入的字节
+  29            * @retval   无
+  30            */
+  31          void _74HC595_WriteByte(unsigned char Byte)   //给8个引脚赋值
+  32          {
+  33   1              //Byte 赋值给 SER
+  34   1      //      SER = Byte&0x80;  //取出最高位，第八位
+  35   1              
+  36   1              //小规则   多位数据（例如8位）传给一位（例如SER）则【非0即1】
+  37   1              //例如：SER = 0x00; 则SER为0；SER = 0x27（随便任何一个数）; SER为1
+  38   1              //Byte&0x80 最高位为1 则为1000 0000, SER = 1
+  39   1          //Byte&0x80 最高位为0 则为0000 0000, SER = 0
+  40   1              
+  41   1      //      SCK = 1;   //给高电平，就是一个上升沿 ，此时SER就会移进去
+  42   1      //      SCK = 0;   //将高电平置为低电平，为下一次移数据做准备
+  43   1              
+  44   1      //      SER = Byte&0x40;  //移第二位
+  45   1      //      SCK = 1;
+  46   1      //      SCK = 0;
+  47   1              
+  48   1              unsigned char i;
+  49   1              for(i = 0;i < 8;i++)
+  50   1              {
+  51   2                      SER = Byte&(0x80>>i);   //右移i位
+  52   2                      SCK = 1;   //上升沿
+C51 COMPILER V9.54   MAIN                                                                  11/02/2024 16:46:07 PAGE 2   
+
+  53   2                      SCK = 0;
+  54   2              }
+  55   1              RCK = 1;    //把8位数据送到io口上
+  56   1              RCK = 0;    //置为0，为下一次移数据做准备
+  57   1      }
+  58          
+  59          
+  60          /**
+  61            * @brief    LED点阵屏显示一列数据
+  62            * @param    Column 要选择的列，范围：0~7，0在最左边
+  63            * @param    Data 要选择列显示的数据，高位在上，【1亮0不亮】
+  64            * @retval   无
+  65          {
+  66          }
+  67            */
+  68          void MatrixLED_ShowColumn(unsigned char Column,Data)
+  69          {
+  70   1              _74HC595_WriteByte(Data);
+  71   1              
+  72   1              //选列，第一种方法
+  73   1              Matrix_LED_PORT = ~(0x80>>Column); //如果传入的是(0,0x80)，
+  74   1                                    //0x80, 1000 0000取反后为0111 1111，故【1亮0不亮】
+  75   1              
+  76   1              //第二种方法
+  77   1      //      if(Column == 0){P0 = ~0x80;}  //0111 1111 选作第一列
+  78   1      //      if(Column == 1){P0 = ~0x40;}
+  79   1      //      if(Column == 2){P0 = ~0x20;}
+  80   1      //      if(Column == 3){P0 = ~0x10;}
+  81   1      //      if(Column == 4){P0 = ~0x08;}
+  82   1      //      if(Column == 5){P0 = ~0x04;}
+  83   1      //      if(Column == 6){P0 = ~0x02;}
+  84   1      //      if(Column == 7){P0 = ~0x01;}
+  85   1              
+  86   1              //为了防止【段选，位选，段选，位选......】带来的【残影】现象
+  87   1              //所以就可以加个延时函数
+  88   1              //段选，位选，延时，位清零，段选，位选，延时，位清零......
+  89   1              Delay(1);
+  90   1              Matrix_LED_PORT = 0xFF;    //位清零
+  91   1      }
+  92          
+  93          void main()
+  94          {
+  95   1              SCK = 0;    //单片机初始化后所有io口都是高电平，需要先将SCK置为低电平
+  96   1              RCK = 0;
+  97   1              
+  98   1              //测试
+  99   1      //      _74HC595_WriteByte(0xF0);  
+ 100   1      //      MatrixLED_ShowColumn(0,0x84);//第0列显示0xAA  1010 1010 【1亮0不亮】
+ 101   1              
+ 102   1              while(1)
+ 103   1              {
+ 104   2                      MatrixLED_ShowColumn(0,0x3C);//第0列显示0xAA  1010 1010 【1亮0不亮】
+ 105   2                      MatrixLED_ShowColumn(1,0x42);
+ 106   2                      MatrixLED_ShowColumn(2,0xA9);
+ 107   2                      MatrixLED_ShowColumn(3,0x85);
+ 108   2                      MatrixLED_ShowColumn(4,0x85);
+ 109   2                      MatrixLED_ShowColumn(5,0xA9);
+ 110   2                      MatrixLED_ShowColumn(6,0x42);
+ 111   2                      MatrixLED_ShowColumn(7,0x3C);
+ 112   2              }
+ 113   1      }
+
+C51 COMPILER V9.54   MAIN                                                                  11/02/2024 16:46:07 PAGE 3   
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    157    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
