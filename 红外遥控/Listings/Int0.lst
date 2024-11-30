@@ -1,0 +1,60 @@
+C51 COMPILER V9.54   INT0                                                                  11/28/2024 18:12:35 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE INT0
+OBJECT MODULE PLACED IN .\Objects\Int0.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE Int0.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\Int0.l
+                    -st) OBJECT(.\Objects\Int0.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          
+   3          /**
+   4            * @brief    对外部中断 0 进行初始化设置，以便在特定条件下
+   5                                    能够正确触发外部中断 0，并确定其优先级以及与其
+   6                                    他中断的嵌套关系。
+   7            * @param    无
+   8            * @retval   无
+   9            */
+  10          void Int0_Init(void)
+  11          {
+  12   1              IT0 = 1;          // IT0 通常用来设置外部中断 0 的触发方式。
+  13   1                                                // 当 IT0 被赋值为 0 时，表示将外部中断 0 
+  14   1                                                // 设置为【低电平】触发方式。
+  15   1                                                // IT0 = 1 ，表示【下降沿】触发，
+  16   1                                                // 【中断0】和【按键3】都是P3^2,当【IT0 = 1】时，按下
+  17   1                                                // 按键3时，一直处于【低电平】状态，会一直增加
+  18   1              IE0 = 0;
+  19   1              EX0 = 1;
+  20   1              EA = 1;
+  21   1              PX0 = 1;          // 给外部中断一个高的优先级，可以实现在别的内部中断
+  22   1                                                // 进行时，外部中断可以进行嵌套
+  23   1      }
+  24          
+  25          /*
+  26            * @brief   中断0的模板。当外部中断 0 被触发时（触发条件由相关设置如 
+  27                                   IT0 等来确定，比如前面提到的电平触发方式等），单片机就会
+  28                                   暂停正在执行的主程序，转而执行这个 Int0_Routine 函数，处
+  29                                   理完中断相关事宜后，再回到主程序继续执行。
+  30            * @param   无
+  31            * @retval  无
+  32          void Int0_Routine(void) interrupt 0
+  33          {
+  34                  ......;
+  35          }
+  36          */
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     11    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
